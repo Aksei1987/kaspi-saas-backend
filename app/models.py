@@ -13,7 +13,7 @@ class User(Base):
 
     settings = relationship("CompanySettings", back_populates="owner", uselist=False)
     products = relationship("Product", back_populates="owner")
-    orders = relationship("Order", back_populates="owner")  # <--- ДОБАВИЛ ЭТУ СТРОКУ
+    orders = relationship("Order", back_populates="owner")
 
 class CompanySettings(Base):
     __tablename__ = "company_settings"
@@ -32,15 +32,17 @@ class Product(Base):
     sku = Column(String, index=True)
     name = Column(String)
     
-    purchase_price = Column(Float, default=0.0)
-    logistics_china = Column(Float, default=0.0)
-    logistics_inner = Column(Float, default=0.0)
-    other_expenses = Column(Float, default=0.0)
-    kaspi_commission = Column(Float, default=0.0)
+    # --- ВОТ ЭТИ ПОЛЯ ТЕРЯЛИСЬ ---
+    purchase_price = Column(Float, default=0.0)    # Закуп
+    logistics_china = Column(Float, default=0.0)   # Доставка Китай
+    logistics_inner = Column(Float, default=0.0)   # Внутренняя доставка
+    packaging_cost = Column(Float, default=0.0)    # Упаковка
+    other_expenses = Column(Float, default=0.0)    # Прочее
+    kaspi_commission = Column(Float, default=0.0)  # Комиссия
+    # -----------------------------
 
     owner = relationship("User", back_populates="products")
 
-# --- НОВАЯ ТАБЛИЦА ЗАКАЗОВ ---
 class Order(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True, index=True)
@@ -53,9 +55,8 @@ class Order(Base):
     status = Column(String)
     order_date = Column(DateTime)
     
-    # --- НОВОЕ ПОЛЕ ---
+    # Поле количества
     quantity = Column(Integer, default=1) 
-    # ------------------
 
     delivery_cost_for_seller = Column(Float, default=0.0)
 
