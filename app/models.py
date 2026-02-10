@@ -60,4 +60,4 @@ class Order(Base):
 
     delivery_cost_for_seller = Column(Float, default=0.0)
 
-    owner = relationship("User", back_populates="orders")
+    owner = relationship("User", back_populates="orders") # Комиссия
