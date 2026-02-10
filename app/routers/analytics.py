@@ -64,46 +64,58 @@ async def get_dashboard_stats(
     # Словарь для группировки по дням (для графика)
     daily_map = {} 
 
-    # 5. ГЛАВНЫЙ ЦИКЛ РАСЧЕТА
+# 5. ГЛАВНЫЙ ЦИКЛ РАСЧЕТА
     for order, product in rows:
-        # Пропускаем отмененные (настрой под свои статусы)
+        # Пропускаем отмененные
         if order.status in ["Отменен", "Возврат"]:
             continue
 
         total_orders += 1
         revenue = order.amount
         total_revenue += revenue
+        
+        # Получаем количество товара в заказе (если вдруг 0, считаем как 1)
+        qty = order.quantity if order.quantity and order.quantity > 0 else 1
 
-        # Считаем расходы
-        cost_price = 0.0
+        # Считаем расходы (Себестоимость)
+        total_cogs = 0.0 # Cost of Goods Sold (Себестоимость проданных товаров)
         
         if product:
-            # Если товар найден, суммируем все расходы
-            # Если каких-то данных нет (None), считаем как 0
+            # 1. Расходы на единицу (Закуп + Логистика + Упаковка)
             purchase = product.purchase_price or 0
             log_china = product.logistics_china or 0
             log_inner = product.logistics_inner or 0
             pack = product.packaging_cost or 0
-            # Комиссия: Если в товаре задана (например 12.5), берем её % от цены, иначе 0
+            
+            unit_cost = purchase + log_china + log_inner + pack
+            
+            # Умножаем на количество в заказе!
+            total_cogs = unit_cost * qty
+
+            # 2. Комиссия Каспи (Считается от Цены продажи)
+            # Если в товаре указан %, например 11
             comm_percent = product.kaspi_commission or 0
-            commission = revenue * (comm_percent / 100)
+            commission_amount = revenue * (comm_percent / 100)
             
-            cost_price = purchase + log_china + log_inner + pack + commission
-            
-            # Проверка: если закуп 0, значит пользователь не заполнил себестоимость
+            # Добавляем комиссию к расходам
+            total_cogs += commission_amount
+
+            # Проверка для статистики
             if purchase == 0:
                 products_without_costs += 1
         else:
             products_without_costs += 1
 
-        # Налог (от оборота)
-        tax = revenue * (tax_percent / 100)
+        # 3. Налог (Считается от Цены продажи)
+        tax_amount = revenue * (tax_percent / 100)
         
-        # Доставка Каспи (берем из заказа)
-        delivery = order.delivery_cost_for_seller or 0
+        # 4. Доставка Каспи (берется из заказа, она обычно за весь заказ)
+        delivery_kaspi = order.delivery_cost_for_seller or 0
 
-        # ЧИСТАЯ ПРИБЫЛЬ ЗАКАЗА
-        profit = revenue - cost_price - tax - delivery
+        # --- ИТОГОВАЯ ФОРМУЛА ЧИСТОЙ ПРИБЫЛИ ---
+        # Прибыль = Выручка - (Себестоимость*Кол-во + Комиссия) - Налог - ДоставкаКаспи
+        profit = revenue - total_cogs - tax_amount - delivery_kaspi
+        
         total_profit += profit
 
         # Записываем в статистику дня
@@ -114,7 +126,7 @@ async def get_dashboard_stats(
         daily_map[day_key]["revenue"] += revenue
         daily_map[day_key]["profit"] += profit
         daily_map[day_key]["count"] += 1
-
+        
     # 6. Финальные расчеты процентов
     margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
     # ROI = Прибыль / Расходы * 100. Расходы = Выручка - Прибыль

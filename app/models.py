@@ -46,13 +46,17 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     
-    kaspi_id = Column(String, index=True) # Номер заказа (чтобы не дублировать)
-    sku = Column(String, index=True)      # Артикул
-    product_name = Column(String)         # Название товара
-    amount = Column(Float)                # Сумма продажи
-    status = Column(String)               # Статус (Архив/Доставлен)
+    kaspi_id = Column(String, index=True)
+    sku = Column(String, index=True)
+    product_name = Column(String)
+    amount = Column(Float)
+    status = Column(String)
+    order_date = Column(DateTime)
     
-    order_date = Column(DateTime)         # Дата заказа
-    delivery_cost_for_seller = Column(Float, default=0.0) # Доставка продавца
+    # --- НОВОЕ ПОЛЕ ---
+    quantity = Column(Integer, default=1) 
+    # ------------------
+
+    delivery_cost_for_seller = Column(Float, default=0.0)
 
     owner = relationship("User", back_populates="orders")

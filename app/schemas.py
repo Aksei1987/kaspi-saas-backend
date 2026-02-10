@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List  # <--- ДОБАВИЛ List
 from datetime import date
 
 # Базовая схема токена (то, что мы отдадим фронтенду после логина)
